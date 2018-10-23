@@ -46,14 +46,15 @@ Thus the initial state is
 * x=0
 * y=0
 * psi=0
-as in line 121 of main.cppad
+
 
 In line 111 of main.cpp a third order polynomial is fitted to the 6 point-pairs.
 
 ## Model Predictive Control with latency
 
-The model predictive controller is called in line 128 of main.cpp.
-The latency of 100 milliseconds = 0.1s = dt is handled by using the control input at time instant dt=0.1s instead of using the control input at time instant 0s, see ine 267 of MPC.cpp.
+To counter the latency of 100ms, a one step forward simulation is performed in lines 128-135 in main.cpp.
+The model predictive controller is called in line 143 of main.cpp.
+
 
 
 ### ORIGINAL CONTENT BY UDACITY

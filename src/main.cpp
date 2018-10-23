@@ -18,6 +18,12 @@ constexpr double pi() { return M_PI; }
 double deg2rad(double x) { return x * pi() / 180; }
 double rad2deg(double x) { return x * 180 / pi(); }
 
+// save variables for forward simulation
+static double steer_value = 0;
+static double throttle_value = 0;
+
+const double Lf = 2.67;
+
 // Checks if the SocketIO event has JSON data.
 // If there is data the JSON object in string format will be returned,
 // else the empty string "" will be returned.
@@ -111,14 +117,23 @@ int main() {
           auto coeffs = polyfit(ptsx_Eigen, ptsy_Eigen, 3);
           // The cross track error is calculated by evaluating
           // the polynomial at x, f(x) and subtracting py
-          double cte = polyeval(coeffs, px) - py;
+          double cte = polyeval(coeffs, px) - 0;
           // Due to the sign starting at 0, the orientation
           // error is -f'(x).
           // derivative of coeffs[0] + coeffs[1]*x -> coeffs[1]
-          double epsi = psi - atan(coeffs[1] + 2*coeffs[2]*px + 3*coeffs[3]*pow(px,2));// + 4*coeffs[4]*pow(px,3) + 5*coeffs[5]*pow(px,4));
+          double epsi = 0 - atan(coeffs[1] + 2*coeffs[2]*px + 3*coeffs[3]*pow(px,2));// + 4*coeffs[4]*pow(px,3) + 5*coeffs[5]*pow(px,4));
 
           Eigen::VectorXd state(6);
-          state << 0, 0, 0, v, cte, epsi;
+          // perform a one-step forward simulation to deal with latency of 100ms
+          double dt = 0.1;
+          state[0] = 0 + v * cos(0) * dt;
+          state[1] = 0 + v * sin(0) * dt;
+          state[2] = 0 - v / Lf * steer_value * dt;
+          state[3] = v + throttle_value * dt;
+          state[4] = (polyeval(coeffs, px) - 0 + v * sin(epsi)) * dt;
+          double psides = atan(coeffs[1] + 2*coeffs[2]*px + 3*coeffs[3]*pow(px,2));
+          state[5] = 0 - psides + v * steer_value / Lf * dt;
+          //state << 0, 0, 0, v, cte, epsi;
           /*
           * TODO: Calculate steering angle and throttle using MPC.
           *
@@ -127,8 +142,8 @@ int main() {
           */
           auto vars = mpc.Solve(state, coeffs);
 
-          double steer_value = vars[0];
-          double throttle_value = vars[1];
+          steer_value = vars[0];
+          throttle_value = vars[1];
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
